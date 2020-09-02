@@ -10,6 +10,10 @@ Previewer.__index = Previewer
 local bat_options = " --style=grid --paging=always "
 --  --terminal-width=%s
 
+-- TODO: We shoudl make sure that all our terminals close all the way.
+--          Otherwise it could be bad if they're just sitting around, waiting to be closed.
+--          I don't think that's the problem, but it could be?
+
 function Previewer:new(opts)
   opts = opts or {}
 
@@ -193,7 +197,7 @@ previewers.qflist = previewers.new {
   setup = function()
     local command_string = "cat %s"
     if vim.fn.executable("bat") then
-      command_string = "bat %s --highlight-line %s -r %s:%s"
+      command_string = "bat %s --highlight-line %s -r %s:%s" .. bat_options
     end
 
     return {
@@ -209,9 +213,15 @@ previewers.qflist = previewers.new {
     local filename = entry.value.filename
     local lnum = entry.value.lnum
 
-    local context = math.floor(height / 2)
-    local start = math.max(0, lnum - context)
-    local finish = lnum + context
+    local start, finish
+    if entry.start and entry.finish then
+      start = entry.start
+      finish = entry.finish
+    else
+      local context = math.floor(height / 2)
+      start = math.max(0, lnum - context)
+      finish = lnum + context
+    end
 
     vim.api.nvim_win_set_buf(status.preview_win, bufnr)
 
